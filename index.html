@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Glyph effect count Calculator</title>
+	<style type="text/css">
+		p{display: inline;}
+	</style>
+	<script type="text/javascript">
+		var lang='en';
+		function get(id){return document.getElementById(id);}
+		const contentTranslations={
+			levelText:{
+				en:'Input glyph level: ',
+				zh:'输入符文等级：',
+			},
+			rarityText:{
+				en:'Input glyph rarity: ',
+				zh:'输入符文稀有度：',
+			},
+			upg1Text:{
+				en:"'50% chance additional effect' upgrade:",
+				zh:"“50%概率多一词条”升级：",
+			},
+			upg1No:{
+				en:"Not bought",
+				zh:"未购买",
+			},
+			upg1Yes:{
+				en:"Bought",
+				zh:"已购买",
+			},
+			upg2Text:{
+				en:"Ra-Effarig level 10 milestone:",
+				zh:"太阳神-鹿颈长的10级里程碑：",
+			},
+			upg2No:{
+				en:"Not reached",
+				zh:"未到达",
+			},
+			upg2Yes:{
+				en:"Reached",
+				zh:"已到达",
+			},
+			button:{
+				en:'Calculate effect count possibilities',
+				zh:"计算符文词条个数的可能性",
+			},
+		}
+		const titleTranslation={
+			en:'Glyph effect count Calculator',
+			zh:'符文词条数量计算器',
+		}
+		function load(newLang){
+			lang=newLang;
+			for(let i in contentTranslations) get(i).innerHTML=contentTranslations[i][lang];
+			document.title=titleTranslation[lang];
+			get('result').innerHTML='';
+		}
+		const resultTranslations={
+			firstText:{
+				en:'Under prievous conditions, a level {level} and rarity {rarity}% glyph has:',
+				zh:'以上情况下，一个{level}级{rarity}%稀有度的符文有：',
+			},
+			patternText:{
+				en:'about {probability}% chance of having {count} {effect}{comma}',
+				zh:'大约{probability}%概率有{count}个{effect}{comma}',
+			},
+			effectSingle:{
+				en:'effect',
+				zh:'词条',
+			},
+			effectPlural:{
+				en:'effects',
+				zh:'词条',
+			},
+			comma:{
+				en:',',
+				zh:'，',
+			},
+			dot:{
+				en:'.',
+				zh:'。',
+			},
+		}
+		function clamp(a,b,c){return Math.max(b,Math.min(a,c));}
+		function calculate(){
+			let level=parseInt(get('level').value);
+			let rarity=parseFloat(get('rarity').value);
+			let upg1=parseInt(document.querySelector('input[name="upg1"]:checked').value);
+			let upg2=parseInt(document.querySelector('input[name="upg2"]:checked').value);
+
+			let strength=1+2.5*rarity/100;
+			let power=1-Math.pow(level*strength,0.5)/100;
+			// floor(1+1.5*rand^power)
+			let result=[0,0,0,0,0,0,0,0];
+			if(power>0){
+				result[1]=clamp(Math.pow(2/3,1/power),0,1);
+				result[2]=1-result[1];
+			}
+			if(power==0){
+				result[2]=1;
+			}
+			if(power<0){
+				for(let i=2;i<=7;i++){
+					let right=i==2?1:clamp(Math.pow((i-1)/1.5,1/power),0,1);
+					let left=i==7?0:clamp(Math.pow(i/1.5,1/power),0,1);
+					result[i]=right-left;
+				}
+			}
+			if(upg1){
+				for(let i=7;i>=2;i--){
+					result[i]+=result[i-1]/2;
+					result[i-1]/=2;
+				}
+			}
+			for(let i=1;i<=3;i++){
+				let dest=i*(1-2*upg2);
+				result[4]+=result[4+dest];
+				result[4+dest]=0;
+			}
+			result=result.map(x=>Math.round(100000*x)/1000);
+			let str='';
+			str+=resultTranslations.firstText[lang].replace('{level}',level).replace('{rarity}',rarity);
+			str+='<br>';
+			let last=0;for(let i=1;i<=7;i++) if(result[i]!=0) last=i;
+			for(let i=1;i<=last;i++) if(result[i]!=0) {
+				str+=resultTranslations.patternText[lang]
+					.replace('{probability}',result[i])
+					.replace('{count}',i)
+					.replace('{effect}',i==1?resultTranslations.effectSingle[lang]:resultTranslations.effectPlural[lang])
+					.replace('{comma}',i==last?resultTranslations.dot[lang]:resultTranslations.comma[lang]);
+				str+='<br>';
+			}
+			get('result').innerHTML=str;
+		}
+	</script>
+</head>
+<body>
+	<button onclick="load('en')">English</button> <button onclick="load('zh')">简体中文</button><br>
+	<br>
+	<div>
+		<p id="levelText"></p><input id="level" style="width:50px;"><br>
+		<p id="rarityText"></p><input id="rarity" style="width:50px;"> %<br>
+		<p id="upg1Text"></p>
+		<input type="radio" name="upg1" value="0" checked><label id="upg1No"></label>
+		<input type="radio" name="upg1" value="1"><label id="upg1Yes"></label><br>
+		<p id="upg2Text"></p>
+		<input type="radio" name="upg2" value="0" checked><label id="upg2No"></label>
+		<input type="radio" name="upg2" value="1"><label id="upg2Yes"></label><br>
+		<button onclick="calculate()" id="button"></button>
+	</div><br>
+	<div id="result"></div>
+	<script type="text/javascript">
+		if(navigator.language=='zh-CN') load('zh');
+		else load('en');
+	</script>
+</body>
+</html>
