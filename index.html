@@ -120,6 +120,7 @@
 				result[4]+=result[4+dest];
 				result[4+dest]=0;
 			}
+			console.log(result);
 			result=result.map(x=>Math.round(100000*x)/1000);
 			let str='';
 			str+=resultTranslations.firstText[lang].replace('{level}',level).replace('{rarity}',rarity);
